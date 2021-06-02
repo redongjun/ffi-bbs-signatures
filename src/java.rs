@@ -454,9 +454,14 @@ pub extern "C" fn Java_bbs_signatures_Bbs_bbs_1verify_1set_1public_1key(
     match env.convert_byte_array(public_key) {
         Err(_) => 1,
         Ok(s) => {
-            let mut error = ExternError::success();
-            let byte_array = ByteArray::from(s);
-            bbs_verify_context_set_public_key(handle as u64, byte_array, &mut error)
+            let mut err = ExternError::success();
+            SIGN_CONTEXT.call_with_result_mut(&mut err, handle as u64, |ctx| -> Result<(), BbsFfiError> {
+                use std::convert::TryFrom;
+                let v = PublicKey::try_from(s)?;
+                ctx.public_key = Some(v);
+                Ok(())
+            });
+            err.get_code().code()
         }
     }
 }
